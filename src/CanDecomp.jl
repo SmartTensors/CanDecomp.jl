@@ -1,3 +1,5 @@
+__precompile__()
+
 module CanDecomp
 #the way we represent the canonical decomposition is like
 #T[i, j, k] = sum(A[l, i] * B[l, j] * C[l, k] for l = 1:size(A, 1))
