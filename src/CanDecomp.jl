@@ -14,7 +14,7 @@ end
 
 macro nprod(N::Int, coeffs::Expr)
 	if coeffs.head != :->
-		error("Second argument must be an anonymous functino expression yielding a coefficient.")
+		error("Second argument must be an anonymous function expression yielding a coefficient.")
 	end
 	cs = [Expr(:escape, Base.Cartesian.inlineanonymous(coeffs, i)) for i = 1:N]
 	return Expr(:call, :*, cs...)
@@ -22,7 +22,7 @@ end
 
 macro ngenerator(N, thing, indices)
 	if indices.head != :->
-		error("Third argument must be an anonymous functino expression yielding a index set.")
+		error("Third argument must be an anonymous function expression yielding a index set.")
 	end
 	cs = [Expr(:escape, Base.Cartesian.inlineanonymous(indices, i)) for i = 1:N]
 	return Expr(:generator, Expr(:escape, thing), cs...)
@@ -94,7 +94,7 @@ end
 @generated function candecompinnerloop!(matrices::StaticArrays.SVector{N, T}, tensor, dims::S; kwargs...) where {N, T, S}
 	code = quote
 		chunks = Array{Tuple{Int, Array{Float64, $(N - 1)}, StaticArrays.SVector{$N, $T}, $S, Array{Any, 1}}}(size(matrices[end], 2))
-		for i = 1:size(matrices[end], 2)#this loop can be parallelized in an embarrasingly parallel fashion
+		for i = 1:size(matrices[end], 2)#this loop can be parallelized in an embarrassingly parallel fashion
 			chunks[i] = (i, (@endslice $N tensor i), matrices, dims, kwargs)
 		end
 		Ucols = pmap(noclosuresallowed, chunks)
