@@ -2,12 +2,13 @@ __precompile__()
 
 module CanDecomp
 #the way we represent the canonical decomposition is like
-#T[i, j, k] = sum(A[l, i] * B[l, j] * C[l, k] for l = 1:size(A, 1))
+#T[i, j, k] = sum(A[i, l] * B[j, l] * C[k, l] for l = 1:size(A, 1))
 #this is based on formula 1.124 in Cichocki et al book
 
 using Base.Cartesian
 import Ipopt
 import JuMP
+import Optim
 import StaticArrays
 
 macro endslice(N::Int, A, i)
@@ -30,15 +31,15 @@ macro ngenerator(N, thing, indices)
 	return Expr(:generator, Expr(:escape, thing), cs...)
 end
 
-tensordims(matrices...) = map(x->size(x, 2), matrices)
+tensordims(matrices...) = map(x->size(x, 1), matrices)
 totensor(matrices...) = totensor(StaticArrays.SVector(matrices...), tensordims(matrices...))
 @generated function totensor(matrices::StaticArrays.SVector{N, T}, dims) where {N, T}
 	code = quote
-		facrank = size(matrices[1], 1)
+		facrank = size(matrices[1], 2)
 		tensor = zeros(dims...)
 		@nloops $N i tensor begin
 			for l = 1:facrank
-				(@nref $N tensor i) += @nprod $N j->matrices[j][l, i_j]
+				(@nref $N tensor i) += @nprod $N j->matrices[j][i_j, l]
 			end
 		end
 		return tensor
@@ -46,12 +47,12 @@ totensor(matrices...) = totensor(StaticArrays.SVector(matrices...), tensordims(m
 	return code
 end
 
-@generated function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims; regularization=1e0, kwargs...) where {N, T}
-	q = macroexpand(:(@ngenerator $(N - 1) (((@nref $(N - 1) tensorslice_i_n i) - sum((@nprod $(N - 1) j->matrices[j][l, i_j]) * Ucol_i_n[l] for l = 1:facrank))^2) j->i_j = 1:dims[j]))
+@generated function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims, ::Type{Val{:nnjump}}; regularization=1e0, kwargs...) where {N, T}
+	q = macroexpand(:(@ngenerator $(N - 1) (((@nref $(N - 1) tensorslice_i_n i) - sum((@nprod $(N - 1) j->matrices[j][i_j, l]) * Ucol_i_n[l] for l = 1:facrank))^2) j->i_j = 1:dims[j]))
 	code = quote
 		m = JuMP.Model(solver=Ipopt.IpoptSolver(; kwargs...))
-		facrank = size(matrices[1], 1)
-		@JuMP.variable(m, Ucol_i_n[j=1:facrank], start=matrices[end][j])
+		facrank = size(matrices[1], 2)
+		@JuMP.variable(m, Ucol_i_n[j=1:facrank], start=matrices[end][i_n, j])
 		@JuMP.constraint(m, Ucol_i_n .>= 0)
 		@JuMP.objective(m, Min, sum($q) + regularization * sum(Ucol_i_n[l]^2 for l=1:facrank))
 		JuMP.solve(m)
@@ -60,38 +61,93 @@ end
 	return code
 end
 
-function candecomp!(matrices, tensor; done=()->false, max_cd_iters=10, kwargs...)
+@generated function optim_f(Ucol_i_n, i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims, regularization) where {N, T}
+	code = quote
+		retval = 0.0
+		facrank = size(matrices[1], 2)
+		@nloops $(N - 1) i j->1:dims[j] begin
+			thisterm = (@nref $(N - 1) tensorslice_i_n i)
+			for l = 1:facrank
+				thisterm -= (@nprod $(N - 1) j->matrices[j][i_j, l]) * Ucol_i_n[l]
+			end
+			retval += thisterm^2
+		end
+		for l = 1:facrank
+			retval += regularization * Ucol_i_n[l]^2
+		end
+		return retval
+	end
+	return code
+end
+
+@generated function optim_g!(storage, Ucol_i_n, i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims, regularization) where {N, T}
+	code = quote
+		retval = 0.0
+		facrank = size(matrices[1], 2)
+		for l = 1:facrank
+			storage[l] = 2 * regularization * Ucol_i_n[l]
+		end
+		@nloops $(N - 1) i j->1:dims[j] begin
+			thisterm = (@nref $(N - 1) tensorslice_i_n i)
+			for l = 1:facrank
+				thisterm -= (@nprod $(N - 1) j->matrices[j][i_j, l]) * Ucol_i_n[l]
+			end
+			for l = 1:facrank
+				matprod = (@nprod $(N - 1) j->matrices[j][i_j, l])
+				storage[l] -= 2 * thisterm * matprod
+			end
+		end
+		return nothing
+	end
+	return code
+end
+
+function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type{Val{:nnoptim}}; regularization=1e0, kwargs...)
+	facrank = size(matrices[1], 2)
+	f = x->optim_f(x, i_n, tensorslice_i_n, matrices, dims, regularization)
+	g! = (x, storage)->optim_g!(storage, x, i_n, tensorslice_i_n, matrices, dims, regularization)
+	od = Optim.OnceDifferentiable(f, g!)
+	x0 = broadcast(max, matrices[end][i_n, :], 1e-15)
+	lower = zeros(size(matrices[end], 2))
+	upper = fill(Inf, size(matrices[end], 2))
+	opt = Optim.optimize(od, x0, lower, upper, Optim.Fminbox(); show_trace=false)
+	#opt = Optim.optimize(f, g!, x0, Optim.LBFGS())
+	return opt.minimizer
+end
+
+function candecomp!(matrices, tensor, kind=Val{:nnjump}; done=()->false, max_cd_iters=10, kwargs...)
 	i = 0
 	while i < max_cd_iters && !done()
 		i += 1
-		candecompiteration!(matrices, tensor; kwargs...)
+		candecompiteration!(matrices, tensor, kind; kwargs...)
 	end
 end
 
-function candecompiteration!(matrices, tensor; kwargs...)
+function candecompiteration!(matrices, tensor, kind; kwargs...)
 	dims = size(tensor)
 	for i = 1:length(matrices)
 		perm = collect(1:length(matrices))
 		perm[i] = length(matrices)#swap so that the i-th thing looks like the last thing and the last thing looks like the i-th thing
 		perm[end] = i
-		candecompinnerloop!(StaticArrays.SVector(matrices[perm]...), permutedims(tensor, perm), dims[perm]; kwargs...)
+		candecompinnerloop!(StaticArrays.SVector(matrices[perm]...), permutedims(tensor, perm), dims[perm], kind; kwargs...)
 	end
 end
 
 function noclosuresallowed(chunk)
-	i_n, tensorslice_i_n, matrices, dims, kwargs = chunk[1:5]
-	return estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims; kwargs...)
+	i_n, tensorslice_i_n, matrices, dims, kind, kwargs = chunk[1:6]
+	return estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, kind; kwargs...)
 end
 
-@generated function candecompinnerloop!(matrices::StaticArrays.SVector{N, T}, tensor, dims::S; kwargs...) where {N, T, S}
+@generated function candecompinnerloop!(matrices::StaticArrays.SVector{N, T}, tensor, dims::S, kind::R; kwargs...) where {N, T, S, R}
 	code = quote
-		chunks = Array{Tuple{Int, Array{Float64, $(N - 1)}, StaticArrays.SVector{$N, $T}, $S, Array{Any, 1}}}(size(matrices[end], 2))
-		for i = 1:size(matrices[end], 2)#this loop can be parallelized in an embarrassingly parallel fashion
-			chunks[i] = (i, (@endslice $N tensor i), matrices, dims, kwargs)
+		chunks = Array{Tuple{Int, Array{Float64, $(N - 1)}, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
+		for i = 1:size(matrices[end], 1)
+			chunks[i] = (i, (@endslice $N tensor i), matrices, dims, kind, kwargs)
 		end
 		Ucols = pmap(noclosuresallowed, chunks)
-		for i = 1:size(matrices[end], 2)
-			matrices[end][:, i] = Ucols[i]
+		#Ucols = map(noclosuresallowed, chunks)
+		for i = 1:size(matrices[end], 1)
+			matrices[end][i, :] = Ucols[i]
 		end
 	end
 	return code
