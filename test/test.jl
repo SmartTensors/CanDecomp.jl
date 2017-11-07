@@ -2,14 +2,16 @@ using Base.Test
 import CanDecomp
 
 srand(0)
-A = rand(100, 3)
-B = rand(50, 3)
-C = rand(20, 3)
+A = rand(10, 3)
+B = rand(5, 3)
+C = rand(2, 3)
 
 tensor = CanDecomp.totensor(A, B, C)
 
 for optmethod in [:nnoptim, :nnjump]
+#for optmethod in [:nnoptim, :nnmads, :nnjump]
 #optmethod = :nnoptim
+#optmethod = :nnmads
 	@test CanDecomp.optim_f(C[1, :], 1, tensor[:, :, 1], StaticArrays.SVector(A, B, C), CanDecomp.tensordims(A, B, C), 0e0) ≈ 0 atol=1e-9
 	Cest = similar(C)
 	for i_3 = 1:size(C, 1)
@@ -41,6 +43,7 @@ for optmethod in [:nnoptim, :nnjump]
 	Apf = copy(Ap)
 	Bpf = copy(Bp)
 	Cpf = copy(Cp)
+	print(optmethod)
 	@time CanDecomp.candecomp!(StaticArrays.SVector(Apf, Bpf, Cpf), tensor, Val{optmethod}; regularization=1e-3, print_level=0, max_cd_iters=25)
 	tensor_done = CanDecomp.totensor(Apf, Bpf, Cpf)
 	doneerror = vecnorm(tensor - tensor_done)

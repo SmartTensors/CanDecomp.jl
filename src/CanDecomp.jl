@@ -1,4 +1,4 @@
-__precompile__()
+#__precompile__()
 
 module CanDecomp
 #the way we represent the canonical decomposition is like
@@ -8,6 +8,7 @@ module CanDecomp
 using Base.Cartesian
 import Ipopt
 import JuMP
+import Mads
 import Optim
 import StaticArrays
 
@@ -59,6 +60,38 @@ end
 		return JuMP.getvalue(Ucol_i_n)
 	end
 	return code
+end
+
+@generated function optim_f_lm(Ucol_i_n, i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims, regularization) where {N, T}
+	code = quote
+		residuals = Array{Float64}(length(tensorslice_i_n) + length(Ucol_i_n))
+		facrank = size(matrices[1], 2)
+		residualindex = 1
+		@nloops $(N - 1) i j->1:dims[j] begin
+			thisterm = (@nref $(N - 1) tensorslice_i_n i)
+			for l = 1:facrank
+				thisterm -= (@nprod $(N - 1) j->matrices[j][i_j, l]) * Ucol_i_n[l]
+			end
+			residuals[residualindex] = thisterm
+			residualindex += 1
+		end
+		for l = 1:facrank
+			residuals[end + 1 - l] = sqrt(regularization) * Ucol_i_n[l]
+		end
+		return residuals
+	end
+	return code
+end
+
+function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type{Val{:nnmads}}; regularization=1e0, kwargs...)
+	facrank = size(matrices[1], 2)
+	f_lm = x->optim_f_lm(x, i_n, tensorslice_i_n, matrices, dims, regularization)
+	f = x->optim_f(x, i_n, tensorslice_i_n, matrices, dims, regularization)
+	x0 = broadcast(max, matrices[end][i_n, :], 1e-15)
+	lower = zeros(size(matrices[end], 2))
+	upper = fill(1e9, size(matrices[end], 2))
+	minimizer, _ = Mads.minimize(f_lm, x0; lowerbounds=lower, upperbounds=upper, logtransformed=fill(false, length(lower)))
+	return minimizer
 end
 
 @generated function optim_f(Ucol_i_n, i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims, regularization) where {N, T}
