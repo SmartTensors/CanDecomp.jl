@@ -88,9 +88,7 @@ function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type
 	f_lm = x->optim_f_lm(x, i_n, tensorslice_i_n, matrices, dims, regularization)
 	f = x->optim_f(x, i_n, tensorslice_i_n, matrices, dims, regularization)
 	x0 = broadcast(max, matrices[end][i_n, :], 1e-15)
-	lower = zeros(size(matrices[end], 2))
-	upper = fill(1e9, size(matrices[end], 2))
-	minimizer, _ = Mads.minimize(f_lm, x0; lowerbounds=lower, upperbounds=upper, logtransformed=fill(false, length(lower)))
+	minimizer, _ = Mads.minimize(f_lm, x0; np_lambda=1)
 	return minimizer
 end
 
@@ -184,6 +182,11 @@ end
 		end
 	end
 	return code
+end
+
+const candecompdir = splitdir(splitdir(Base.source_path())[1])[1]
+function test()
+	include(joinpath(candecompdir, "test", "runtests.jl"))
 end
 
 end
