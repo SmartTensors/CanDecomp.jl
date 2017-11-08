@@ -14,8 +14,7 @@ for optmethod in [:nnoptim, :nnjump, :nnmads]
 	for i_3 = 1:size(C, 1)
 		Cest[i_3, :] = CanDecomp.estimatecolumnoflastmatrix(i_3, tensor[:, :, i_3], StaticArrays.SVector(A, B, zeros(size(C)...)), CanDecomp.tensordims(A, B, C), Val{optmethod}; regularization=1e-3, print_level=0)
 	end
-	# @test tensor ≈ CanDecomp.totensor(A, B, Cest) atol=1e-2
-	@show Cest, C
+	@test tensor ≈ CanDecomp.totensor(A, B, Cest) atol=1e-2
 	@test Cest ≈ C atol=2e-2
 
 	Cest2 = zeros(size(C)...)
