@@ -8,12 +8,13 @@ C = rand(2, 3)
 
 tensor = CanDecomp.totensor(A, B, C)
 
-for optmethod in [:nnoptim, :nnjump, :nnmads]
+for optmethod in [:nnoptim, :nnmads, :nnjump]
 	@test CanDecomp.optim_f(C[1, :], 1, tensor[:, :, 1], StaticArrays.SVector(A, B, C), CanDecomp.tensordims(A, B, C), 0e0) ≈ 0 atol=1e-9
 	Cest = similar(C)
 	for i_3 = 1:size(C, 1)
 		Cest[i_3, :] = CanDecomp.estimatecolumnoflastmatrix(i_3, tensor[:, :, i_3], StaticArrays.SVector(A, B, zeros(size(C)...)), CanDecomp.tensordims(A, B, C), Val{optmethod}; regularization=1e-3, print_level=0)
 	end
+	@show Cest, C
 	@test tensor ≈ CanDecomp.totensor(A, B, Cest) atol=1e-2
 	@test Cest ≈ C atol=2e-2
 

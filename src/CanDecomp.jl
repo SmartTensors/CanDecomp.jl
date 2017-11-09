@@ -87,8 +87,15 @@ function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type
 	facrank = size(matrices[1], 2)
 	f_lm = x->optim_f_lm(x, i_n, tensorslice_i_n, matrices, dims, regularization)
 	f = x->optim_f(x, i_n, tensorslice_i_n, matrices, dims, regularization)
-	x0 = broadcast(max, matrices[end][i_n, :], 1e-15)
+	l = 1e-15
+	x0 = broadcast(max, matrices[end][i_n, :], l)
 	minimizer, _ = Mads.minimize(f_lm, x0; np_lambda=1)
+	negindex = x0 .< 0
+	if any(negindex)
+		l = 1e-15
+		x0[negindex] = l
+		minimizer, _ = Mads.minimize(f_lm, x0; np_lambda=1, lowerbound=l, upperbound=1e8, logtransform=true, tolX=1e-6, tolG=1e-6, tolOF=1e-32, maxEval=10000000, maxJacobians=100, sindx=0.00001)
+	end
 	return minimizer
 end
 
