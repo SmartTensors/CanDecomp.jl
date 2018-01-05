@@ -142,7 +142,7 @@ end
 function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type{Val{:nnoptim}}; regularization=1e0, kwargs...)
 	facrank = size(matrices[1], 2)
 	f = x->optim_f(x, i_n, tensorslice_i_n, matrices, dims, regularization)
-	g! = (x, storage)->optim_g!(storage, x, i_n, tensorslice_i_n, matrices, dims, regularization)
+	g! = (storage, x)->optim_g!(storage, x, i_n, tensorslice_i_n, matrices, dims, regularization)
 	od = Optim.OnceDifferentiable(f, g!)
 	x0 = broadcast(max, matrices[end][i_n, :], 1e-15)
 	lower = zeros(size(matrices[end], 2))
