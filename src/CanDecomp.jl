@@ -32,6 +32,8 @@ macro ngenerator(N, thing, indices)
 	return Expr(:generator, Expr(:escape, thing), cs...)
 end
 
+include("lr.jl")
+
 tensordims(matrices...) = map(x->size(x, 1), matrices)
 totensor(matrices...) = totensor(StaticArrays.SVector(matrices...), tensordims(matrices...))
 @generated function totensor(matrices::StaticArrays.SVector{N, T}, dims) where {N, T}
@@ -142,7 +144,7 @@ end
 function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type{Val{:nnoptim}}; regularization=1e0, kwargs...)
 	facrank = size(matrices[1], 2)
 	f = x->optim_f(x, i_n, tensorslice_i_n, matrices, dims, regularization)
-	g! = (x, storage)->optim_g!(storage, x, i_n, tensorslice_i_n, matrices, dims, regularization)
+	g! = (storage, x)->optim_g!(storage, x, i_n, tensorslice_i_n, matrices, dims, regularization)
 	od = Optim.OnceDifferentiable(f, g!)
 	x0 = broadcast(max, matrices[end][i_n, :], 1e-15)
 	lower = zeros(size(matrices[end], 2))
@@ -177,7 +179,8 @@ end
 
 @generated function candecompinnerloop!(matrices::StaticArrays.SVector{N, T}, tensor, dims::S, kind::R; kwargs...) where {N, T, S, R}
 	code = quote
-		chunks = Array{Tuple{Int, Array{Float64, $(N - 1)}, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
+		#chunks = Array{Tuple{Int, Array{Float64, $(N - 1)}, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
+		chunks = Array{Tuple{Int, Any, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
 		for i = 1:size(matrices[end], 1)
 			chunks[i] = (i, (@endslice $N tensor i), matrices, dims, kind, kwargs)
 		end
