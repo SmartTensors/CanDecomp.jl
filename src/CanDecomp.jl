@@ -32,6 +32,8 @@ macro ngenerator(N, thing, indices)
 	return Expr(:generator, Expr(:escape, thing), cs...)
 end
 
+include("lr.jl")
+
 tensordims(matrices...) = map(x->size(x, 1), matrices)
 totensor(matrices...) = totensor(StaticArrays.SVector(matrices...), tensordims(matrices...))
 @generated function totensor(matrices::StaticArrays.SVector{N, T}, dims) where {N, T}
@@ -177,7 +179,8 @@ end
 
 @generated function candecompinnerloop!(matrices::StaticArrays.SVector{N, T}, tensor, dims::S, kind::R; kwargs...) where {N, T, S, R}
 	code = quote
-		chunks = Array{Tuple{Int, Array{Float64, $(N - 1)}, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
+		#chunks = Array{Tuple{Int, Array{Float64, $(N - 1)}, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
+		chunks = Array{Tuple{Int, Any, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
 		for i = 1:size(matrices[end], 1)
 			chunks[i] = (i, (@endslice $N tensor i), matrices, dims, kind, kwargs)
 		end
