@@ -64,6 +64,7 @@ end
 ns = collect(5:9)
 fig, ax = PyPlot.subplots()
 ps = [1, 2, 4]
+ts = Float64
 for p in ps
 	rmprocs(workers())
 	if p > 1
@@ -101,4 +102,22 @@ ax[:legend](["perfect scaling"; map(i->i > 1 ? "$i CPUs" : "1 CPU", ps)])
 display(fig)
 println()
 fig[:savefig]("nscaling.pdf")
+PyPlot.close(fig)
+
+fig, ax = PyPlot.subplots()
+ax[:loglog](ps, ps / ps[1], "k", basex=2, basey=2)
+for n in ns
+	ts = Float64[]
+	for p in ps
+		push!(ts, timingdict[(2^n, p)])
+	end
+	ax[:loglog](ps, ts[1] ./ ts, ".", basex=2, basey=2, ms=10, alpha=0.5)
+end
+ax[:set_ylabel]("speed-up")
+ax[:set_xlabel]("Number of CPUs")
+ax[:set_title](L"N\times N\times N"*" tensor")
+ax[:legend](["perfect scaling"; map(N->"N=$N", ns)])
+display(fig)
+println()
+fig[:savefig]("pscaling.pdf")
 PyPlot.close(fig)
