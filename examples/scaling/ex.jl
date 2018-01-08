@@ -1,5 +1,8 @@
 using Base.Test
+using LaTeXStrings
 import CanDecomp
+import JLD
+import PyPlot
 
 srand(0)
 A = rand(10, 3)
@@ -52,3 +55,50 @@ tensor_done = CanDecomp.totensor(Apf, Bpf, Cpf)
 doneerror = vecnorm(full(tensor) - tensor_done)
 @test oneiterationerror > doneerror#make sure doing more iterations improves things
 @test tensor_done ≈ full(tensor) rtol=2e-2
+
+if !isfile("timings.jld")
+	timingdict = Dict()
+else
+	timingdict = JLD.load("timings.jld", "timingdict")
+end
+ns = collect(5:9)
+fig, ax = PyPlot.subplots()
+ps = [1, 2, 4]
+for p in ps
+	rmprocs(workers())
+	if p > 1
+		addprocs(p)
+		reload("CanDecomp")
+	end
+	ts = Float64[]
+	for n in ns
+		if haskey(timingdict, (2^n, nworkers()))
+			push!(ts, timingdict[(2^n, nworkers())])
+		else
+			A = rand(2^n, 3)
+			B = rand(2^n, 3)
+			C = rand(2^n, 3)
+			tensor = CanDecomp.LowRankTensor(StaticArrays.SVector(A, B, C))
+			Ap = (1 - noise) * A + noise * rand(size(A)...)
+			Bp = (1 - noise) * B + noise * rand(size(B)...)
+			Cp = (1 - noise) * C + noise * rand(size(C)...)
+			print("$n: ")
+			t = @elapsed @time CanDecomp.candecomp!(StaticArrays.SVector(Ap, Bp, Cp), tensor, Val{optmethod}; regularization=1e-3, print_level=0, max_cd_iters=10)
+			push!(ts, t)
+			timingdict[(2^n, nworkers())] = t
+		end
+		JLD.save("timings.jld", "timingdict", timingdict)
+	end
+	if nworkers() == 1
+		ax[:loglog](2.^ns, ts[end] .* (8.^ns) ./ 8.^ns[end], "k", basex=2, basey=2)
+	end
+	ax[:loglog](2.^ns, ts, ".", basex=2, basey=2, ms=10)
+end
+ax[:set_ylabel]("time (s)")
+ax[:set_xlabel]("N")
+ax[:set_title](L"N\times N\times N"*" tensor")
+ax[:legend](["perfect scaling"; map(i->i > 1 ? "$i CPUs" : "1 CPU", ps)])
+display(fig)
+println()
+fig[:savefig]("nscaling.pdf")
+PyPlot.close(fig)
