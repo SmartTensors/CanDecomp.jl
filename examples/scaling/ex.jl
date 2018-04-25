@@ -64,7 +64,7 @@ end
 ns = collect(5:9)
 fig, ax = PyPlot.subplots()
 ps = [1, 2, 4]
-ts = Float64
+ts = Float64[]
 for p in ps
 	rmprocs(workers())
 	if p > 1
@@ -84,7 +84,7 @@ for p in ps
 			Bp = (1 - noise) * B + noise * rand(size(B)...)
 			Cp = (1 - noise) * C + noise * rand(size(C)...)
 			print("$n: ")
-			t = @elapsed @time CanDecomp.candecomp!(StaticArrays.SVector(Ap, Bp, Cp), tensor, Val{optmethod}; regularization=1e-3, print_level=0, max_cd_iters=10)
+			t = @elapsed @time CanDecomp.candecomp!(StaticArrays.SVector(Ap, Bp, Cp), tensor, Val{optmethod}; regularization=1e-3, print_level=0, max_cd_iters=2)
 			push!(ts, t)
 			timingdict[(2^n, nworkers())] = t
 		end

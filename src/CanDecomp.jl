@@ -145,8 +145,8 @@ function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type
 	facrank = size(matrices[1], 2)
 	f = x->optim_f(x, i_n, tensorslice_i_n, matrices, dims, regularization)
 	g! = (storage, x)->optim_g!(storage, x, i_n, tensorslice_i_n, matrices, dims, regularization)
-	od = Optim.OnceDifferentiable(f, g!)
 	x0 = broadcast(max, matrices[end][i_n, :], 1e-15)
+	od = Optim.OnceDifferentiable(f, g!, x0)
 	lower = zeros(size(matrices[end], 2))
 	upper = fill(Inf, size(matrices[end], 2))
 	opt = Optim.optimize(od, x0, lower, upper, Optim.Fminbox(); show_trace=false)
@@ -172,20 +172,23 @@ function candecompiteration!(matrices, tensor, kind; kwargs...)
 	end
 end
 
-function noclosuresallowed(chunk)
-	i_n, tensorslice_i_n, matrices, dims, kind, kwargs = chunk[1:6]
+function noclosuresallowed(chunk, matrices, dims, kind; kwargs...)
+	i_n, tensorslice_i_n = chunk[1:2]
 	return estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, kind; kwargs...)
 end
 
-@generated function candecompinnerloop!(matrices::StaticArrays.SVector{N, T}, tensor, dims::S, kind::R; kwargs...) where {N, T, S, R}
+function candecompinnerloop!(matrices::StaticArrays.SVector, tensor, dims, kind; kwargs...)
+	partialclosure = chunk->noclosuresallowed(chunk, matrices, dims, kind; kwargs...)
+	candecompinnerloop!(StaticArrays.SVector(matrices...), tensor, dims, kind, partialclosure)
+end
+
+@generated function candecompinnerloop!(matrices::StaticArrays.SVector{N, T}, tensor, dims::S, kind::R, partialclosure) where {N, T, S, R}
 	code = quote
-		#chunks = Array{Tuple{Int, Array{Float64, $(N - 1)}, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
-		chunks = Array{Tuple{Int, Any, StaticArrays.SVector{$N, $T}, $S, $R, Array{Any, 1}}}(size(matrices[end], 1))
+		chunks = Array{Tuple{Int, Any}}(size(matrices[end], 1))
 		for i = 1:size(matrices[end], 1)
-			chunks[i] = (i, (@endslice $N tensor i), matrices, dims, kind, kwargs)
+			chunks[i] = (i, (@endslice $N tensor i))
 		end
-		Ucols = pmap(noclosuresallowed, chunks)
-		#Ucols = map(noclosuresallowed, chunks)
+		Ucols = pmap(partialclosure, chunks; batch_size=ceil(Int, length(chunks) / nworkers()))
 		for i = 1:size(matrices[end], 1)
 			matrices[end][i, :] = Ucols[i]
 		end
