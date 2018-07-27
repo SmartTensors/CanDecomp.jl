@@ -1,0 +1,43 @@
+# Install required Ipopt && Mads tools
+before_script:
+  - apt-get update
+  - apt-get install -y wget gcc gfortran g++ make patch bzip2 hdf5-tools
+
+stages:
+  - test
+  - postprocess
+
+# Define a testing template to use against various images
+.test_template: &test_definition
+  script:
+    - julia -e 'versioninfo(); Pkg.clone(pwd())'
+    - julia -e 'Pkg.test("CanDecomp",coverage = true)'
+
+# Run test on stable image
+test:0.6.2:
+  stage: test
+  image: julia:0.6.2
+  <<: *test_definition
+
+# Run test on development image
+test:dev:
+  stage: test
+  image: julia:latest
+  allow_failure: true
+  <<: *test_definition
+
+# Get code coverage and optionally push
+coverage:
+  stage: postprocess
+  allow_failure: true
+  image: julia:0.6.2
+  dependencies:
+    - test:0.6.2
+  script:
+    - julia -e 'Pkg.add("Coverage");'
+    - julia -e 'using Coverage;
+                cl, tl = get_summary(process_folder());
+                println("(", cl/tl*100, "%) covered")'
+    #           Codecov.submit_local(process_folder(), ".")'
+  coverage: '/\(\d+.\d+\%\) covered/'
+  
