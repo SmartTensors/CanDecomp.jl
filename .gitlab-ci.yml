@@ -7,11 +7,25 @@ stages:
   - test
   - postprocess
 
+variables:
+  JULIA_PKGDIR: "$CI_PROJECT_DIR/.julia/"
+  package: 'CanDecomp'
+
 # Define a testing template to use against various images
 .test_template: &test_definition
   script:
-    - julia -e 'versioninfo(); Pkg.clone(pwd())'
-    - julia -e 'Pkg.test("CanDecomp",coverage = true)'
+    - julia -e "Pkg.init();
+                symlink(\"$CI_PROJECT_DIR\", Pkg.dir(\"$package\"));
+                Pkg.resolve();
+                Pkg.build(\"$package\");
+                Pkg.test(\"$package\",coverage = true)"
+                
+  # Keep coverage files for postprocess stage
+  artifacts:
+    paths:
+      - $JULIA_PKGDIR/v0.6/$package
+      - $JULIA_PKGDIR/v0.6/METADATA
+      - src/*.cov
 
 # Run test on stable image
 test:0.6.2:
@@ -35,9 +49,8 @@ coverage:
     - test:0.6.2
   script:
     - julia -e 'Pkg.add("Coverage");'
-    - julia -e 'using Coverage;
+    - julia -e "using Coverage;
                 cl, tl = get_summary(process_folder());
-                println("(", cl/tl*100, "%) covered")'
-    #           Codecov.submit_local(process_folder(), ".")'
+                println(\"(\", cl/tl*100, \"%) covered\")"
   coverage: '/\(\d+.\d+\%\) covered/'
   
