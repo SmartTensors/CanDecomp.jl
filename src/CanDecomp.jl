@@ -154,7 +154,7 @@ function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type
 	return opt.minimizer
 end
 
-function candecomp!(matrices, tensor, kind=Val{:nnjump}; done=()->false, max_cd_iters=10, kwargs...)
+function candecomp!(matrices, tensor, kind=Val{:nnoptim}; done=()->false, max_cd_iters=10, kwargs...)
 	i = 0
 	while i < max_cd_iters && !done()
 		i += 1
