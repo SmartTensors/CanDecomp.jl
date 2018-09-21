@@ -1,5 +1,5 @@
-import Base.Test
 import CanDecomp
+import Base.Test
 
 srand(0)
 A = rand(10, 3)
