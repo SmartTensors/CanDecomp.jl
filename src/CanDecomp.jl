@@ -1,4 +1,4 @@
-#__precompile__()
+__precompile__()
 
 module CanDecomp
 #the way we represent the canonical decomposition is like
