@@ -9,7 +9,7 @@ mutable struct LowRankTensorEndSlice{N,T,S,M}
 	storageisvalid::Bool
 end
 
-@generated function Base.full(lrt::LowRankTensor{N,T}) where {N, T}
+@generated function full(lrt::LowRankTensor{N,T}) where {N, T}
 	code = quote
 		tensor = zeros(eltype(T), size(lrt)...)
 		facrank = size(lrt.matrices[1], 2)

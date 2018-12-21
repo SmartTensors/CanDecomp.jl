@@ -1,8 +1,9 @@
-using Base.Test
+using Test
 using LaTeXStrings
 import CanDecomp
 import JLD
 import PyPlot
+import StaticArrays
 
 srand(0)
 A = rand(10, 3)
@@ -23,7 +24,7 @@ for i_3 = 1:size(C, 1)
 	Cest[i_3, :] = CanDecomp.estimatecolumnoflastmatrix(i_3, tensor[:, :, i_3], StaticArrays.SVector(A, B, zeros(size(C)...)), CanDecomp.tensordims(A, B, C), Val{optmethod}; regularization=1e-3, print_level=0)
 end
 @show Cest, C
-@test full(tensor) ≈ CanDecomp.totensor(A, B, Cest) atol=1e-2
+@test CanDecomp.full(tensor) ≈ CanDecomp.totensor(A, B, Cest) atol=1e-2
 @test Cest ≈ C atol=2e-2
 
 Cest2 = zeros(size(C)...)
@@ -37,13 +38,13 @@ Ap = A + noise * randn(size(A)...)
 Bp = B + noise * randn(size(B)...)
 Cp = C + noise * randn(size(C)...)
 tensor_init = CanDecomp.totensor(Ap, Bp, Cp)
-initerror = vecnorm(full(tensor) - tensor_init)
+initerror = norm(CanDecomp.full(tensor) - tensor_init)
 Ap1 = copy(Ap)
 Bp1 = copy(Bp)
 Cp1 = copy(Cp)
 CanDecomp.candecompiteration!(StaticArrays.SVector(Ap1, Bp1, Cp1), tensor, Val{optmethod}; regularization=1e-3, print_level=0)
 tensor_oneiteration = CanDecomp.totensor(Ap1, Bp1, Cp1)
-oneiterationerror = vecnorm(full(tensor) - tensor_oneiteration)
+oneiterationerror = norm(CanDecomp.full(tensor) - tensor_oneiteration)
 @test initerror > oneiterationerror#make sure that doing an iteration actually improves things
 
 Apf = copy(Ap)
@@ -52,9 +53,9 @@ Cpf = copy(Cp)
 print(optmethod)
 @time CanDecomp.candecomp!(StaticArrays.SVector(Apf, Bpf, Cpf), tensor, Val{optmethod}; regularization=1e-3, print_level=0, max_cd_iters=25)
 tensor_done = CanDecomp.totensor(Apf, Bpf, Cpf)
-doneerror = vecnorm(full(tensor) - tensor_done)
+doneerror = norm(CanDecomp.full(tensor) - tensor_done)
 @test oneiterationerror > doneerror#make sure doing more iterations improves things
-@test tensor_done ≈ full(tensor) rtol=2e-2
+@test tensor_done ≈ CanDecomp.full(tensor) rtol=2e-2
 
 if !isfile("timings.jld")
 	timingdict = Dict()

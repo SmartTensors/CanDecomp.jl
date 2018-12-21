@@ -11,6 +11,7 @@ import JuMP
 import Mads
 import Optim
 import StaticArrays
+import Distributed
 
 macro endslice(N::Int, A, i)
 	return Expr(:ref, Expr(:escape, A), [Expr(:escape, :(:)) for j=1:N - 1]..., Expr(:escape, i))
@@ -66,7 +67,7 @@ end
 
 @generated function optim_f_lm(Ucol_i_n, i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims, regularization) where {N, T}
 	code = quote
-		residuals = Array{Float64}(length(tensorslice_i_n) + length(Ucol_i_n))
+		residuals = Array{Float64}(undef, length(tensorslice_i_n) + length(Ucol_i_n))
 		facrank = size(matrices[1], 2)
 		residualindex = 1
 		@nloops $(N - 1) i j->1:dims[j] begin
@@ -88,7 +89,6 @@ end
 function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type{Val{:nnmads}}; regularization=1e0, kwargs...)
 	facrank = size(matrices[1], 2)
 	f_lm = x->optim_f_lm(x, i_n, tensorslice_i_n, matrices, dims, regularization)
-	f = x->optim_f(x, i_n, tensorslice_i_n, matrices, dims, regularization)
 	l = 1e-15
 	x0 = broadcast(max, matrices[end][i_n, :], l)
 	minimizer, _ = Mads.minimize(f_lm, x0; np_lambda=1)
@@ -149,7 +149,7 @@ function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type
 	od = Optim.OnceDifferentiable(f, g!, x0)
 	lower = zeros(size(matrices[end], 2))
 	upper = fill(Inf, size(matrices[end], 2))
-	opt = Optim.optimize(od, x0, lower, upper, Optim.Fminbox(); show_trace=false)
+	opt = Optim.optimize(od, lower, upper, x0, Optim.Fminbox())
 	#opt = Optim.optimize(f, g!, x0, Optim.LBFGS())
 	return opt.minimizer
 end
@@ -184,11 +184,11 @@ end
 
 @generated function candecompinnerloop!(matrices::StaticArrays.SVector{N, T}, tensor, dims::S, kind::R, partialclosure) where {N, T, S, R}
 	code = quote
-		chunks = Array{Tuple{Int, Any}}(size(matrices[end], 1))
+		chunks = Array{Tuple{Int, Any}}(undef, size(matrices[end], 1))
 		for i = 1:size(matrices[end], 1)
 			chunks[i] = (i, (@endslice $N tensor i))
 		end
-		Ucols = pmap(partialclosure, chunks; batch_size=ceil(Int, length(chunks) / nworkers()))
+		Ucols = Distributed.pmap(partialclosure, chunks; batch_size=ceil(Int, length(chunks) / Distributed.nworkers()))
 		for i = 1:size(matrices[end], 1)
 			matrices[end][i, :] = Ucols[i]
 		end
