@@ -11,7 +11,7 @@ import JuMP
 import Mads
 import Optim
 import StaticArrays
-import Distributed
+using Distributed
 
 macro endslice(N::Int, A, i)
 	return Expr(:ref, Expr(:escape, A), [Expr(:escape, :(:)) for j=1:N - 1]..., Expr(:escape, i))
@@ -52,7 +52,7 @@ totensor(matrices...) = totensor(StaticArrays.SVector(matrices...), tensordims(m
 end
 
 @generated function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims, ::Type{Val{:nnjump}}; regularization=1e0, kwargs...) where {N, T}
-	q = macroexpand(:(@ngenerator $(N - 1) (((@nref $(N - 1) tensorslice_i_n i) - sum((@nprod $(N - 1) j->matrices[j][i_j, l]) * Ucol_i_n[l] for l = 1:facrank))^2) j->i_j = 1:dims[j]))
+	q = macroexpand(CanDecomp, :(@ngenerator $(N - 1) (((@nref $(N - 1) tensorslice_i_n i) - sum((@nprod $(N - 1) j->matrices[j][i_j, l]) * Ucol_i_n[l] for l = 1:facrank))^2) j->i_j = 1:dims[j]))
 	code = quote
 		m = JuMP.Model(solver=Ipopt.IpoptSolver(; kwargs...))
 		facrank = size(matrices[1], 2)
@@ -92,6 +92,7 @@ function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type
 	l = 1e-15
 	x0 = broadcast(max, matrices[end][i_n, :], l)
 	minimizer, _ = Mads.minimize(f_lm, x0; np_lambda=1)
+	@show minimizer
 	negindex = minimizer .< 0
 	if any(negindex)
 		minimizer[negindex] = l
@@ -188,7 +189,7 @@ end
 		for i = 1:size(matrices[end], 1)
 			chunks[i] = (i, (@endslice $N tensor i))
 		end
-		Ucols = Distributed.pmap(partialclosure, chunks; batch_size=ceil(Int, length(chunks) / Distributed.nworkers()))
+		Ucols = pmap(partialclosure, chunks; batch_size=ceil(Int, length(chunks) / nworkers()))
 		for i = 1:size(matrices[end], 1)
 			matrices[end][i, :] = Ucols[i]
 		end

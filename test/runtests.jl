@@ -13,7 +13,7 @@ T = CanDecomp.totensor(A, B, C)
 
 @Test.testset "CanDecomp" begin
 
-for optmethod in [:nnoptim, :nnmads, :nnjump]
+for optmethod in [:nnoptim, :nnjump, :nnmads]
 	@Test.test CanDecomp.optim_f(C[1, :], 1, T[:, :, 1], StaticArrays.SVector(A, B, C), CanDecomp.tensordims(A, B, C), 0e0) ≈ 0 atol=1e-9
 	Cest = similar(C)
 	for i_3 = 1:size(C, 1)
