@@ -92,10 +92,9 @@ function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices, dims, ::Type
 	l = 1e-15
 	x0 = broadcast(max, matrices[end][i_n, :], l)
 	minimizer, _ = Mads.minimize(f_lm, x0; np_lambda=1)
-	@show minimizer
 	negindex = minimizer .< 0
 	if any(negindex)
-		minimizer[negindex] = l
+		minimizer[negindex] .= l
 		minimizer, _ = Mads.minimize(f_lm, minimizer; np_lambda=1, lowerbound=l, upperbound=1e8, logtransform=true, tolX=1e-6, tolG=1e-6, tolOF=1e-32, maxEval=10000000, maxJacobians=100, sindx=0.00001)
 	end
 	return minimizer
