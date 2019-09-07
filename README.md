@@ -11,7 +11,7 @@ import Pkg; Pkg.add(Pkg.PackageSpec(url="https://github.com/TensorDecompositions
 or
 
 ```julia
-import Pkg; Pkg.dev("https://github.com/TensorDecompositions/CanDecomp.jl.git")
+import Pkg; Pkg.develop(Pkg.PackageSpec(url="https://github.com/TensorDecompositions/CanDecomp.jl.git"))
 ```
 
 ### Tensor Decomposition
