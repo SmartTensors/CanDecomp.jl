@@ -1,4 +1,4 @@
-## CanDecomp.jl ##
+## CanDecomp.jl: Candecomp/Parafac Tensor Decomposition ##
 
 ### Installation
 
@@ -27,7 +27,7 @@ import CanDecomp
 A = rand(2, 3)
 B = rand(5, 3)
 C = rand(10, 3)
-T = CanDecomp.totensor(A, B, C)
+T_orig = CanDecomp.totensor(A, B, C)
 ```
 
 Then generate random initial guesses for the tensor factors:
@@ -38,11 +38,11 @@ Bf = rand(size(B)...);
 Cf = rand(size(C)...);
 ```
 
-Execute **CanDecomp** to estimate the tensor factors based on the tensor `T` only:
+Execute **CanDecomp** to estimate the tensor factors based on the tensor `T_orig` only:
 
 ```julia
 import StaticArrays
-CanDecomp.candecomp!(StaticArrays.SVector(Af, Bf, Cf), T, Val{:nnoptim}; regularization=1e-3, print_level=0, max_cd_iters=1000)
+CanDecomp.candecomp!(StaticArrays.SVector(Af, Bf, Cf), T_orig, Val{:nnoptim}; regularization=1e-3, print_level=0, max_cd_iters=1000)
 ```
 
 Construct the estimated tensor:
@@ -57,7 +57,7 @@ Compare the estimated and the original tensors:
 import NTFk
 import LinearAlgebra
 
-@info("Norm $(LinearAlgebra.norm(T_est .- T))")
+@info("Norm $(LinearAlgebra.norm(T_est .- T_orig))")
 
 NTFk.plot2matrices(A, Af; progressbar=nothing)
 NTFk.plot2matrices(B, Bf; progressbar=nothing)
