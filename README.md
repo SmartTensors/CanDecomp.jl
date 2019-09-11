@@ -16,6 +16,55 @@ import Pkg; Pkg.develop("CanDecomp")
 
 **CanDecomp** is a module required by [NTFk](https://github.com/TensorDecompositions/NTFk.jl). For more information, visit [tensors.lanl.gov](http://tensors.lanl.gov)
 
+### Examples
+
+A simple problem demonstrating **CanDecomp** can be executed as follows.
+First, generate a random CP (Candecomp/Parafac) tensor:
+
+```julia
+import CanDecomp
+
+A = rand(2, 3)
+B = rand(5, 3)
+C = rand(10, 3)
+T = CanDecomp.totensor(A, B, C)
+```
+
+Then generate random initial guesses for the tensor factors:
+
+```julia
+Af = rand(size(A)...);
+Bf = rand(size(B)...);
+Cf = rand(size(C)...);
+```
+
+Execute **CanDecomp** to estimate the tensor factors based on the tensor `T` only:
+
+```julia
+import StaticArrays
+CanDecomp.candecomp!(StaticArrays.SVector(Af, Bf, Cf), T, Val{:nnoptim}; regularization=1e-3, print_level=0, max_cd_iters=1000)
+```
+
+Construct the estimated tensor:
+
+```julia
+T_est = CanDecomp.totensor(Af, Bf, Cf);
+```
+
+Compare the estimated and the original tensors:
+
+```julia
+import NTFk
+import LinearAlgebra
+
+@info("Norm $(LinearAlgebra.norm(T_est .- T))")
+
+NTFk.plot2matrices(A, Af; progressbar=nothing)
+NTFk.plot2matrices(B, Bf; progressbar=nothing)
+NTFk.plot2matrices(C, Cf; progressbar=nothing)
+NTFk.plotlefttensor(T, T_est; progressbar=nothing)
+```
+
 ### Tensor Decomposition
 
 **NTFk** performs a novel unsupervised Machine Learning (ML) method based on Tensor Decomposition coupled with sparsity and nonnegativity constraints.
