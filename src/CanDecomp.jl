@@ -54,13 +54,13 @@ end
 @generated function estimatecolumnoflastmatrix(i_n, tensorslice_i_n, matrices::StaticArrays.SVector{N, T}, dims, ::Type{Val{:nnjump}}; regularization=1e0, kwargs...) where {N, T}
 	q = macroexpand(CanDecomp, :(@ngenerator $(N - 1) (((@nref $(N - 1) tensorslice_i_n i) - sum((@nprod $(N - 1) j->matrices[j][i_j, l]) * Ucol_i_n[l] for l = 1:facrank))^2) j->i_j = 1:dims[j]))
 	code = quote
-		m = JuMP.Model(solver=Ipopt.IpoptSolver(; kwargs...))
+		m = JuMP.Model(JuMP.with_optimizer(Ipopt.Optimizer; kwargs...))
 		facrank = size(matrices[1], 2)
 		@JuMP.variable(m, Ucol_i_n[j=1:facrank], start=matrices[end][i_n, j])
 		@JuMP.constraint(m, Ucol_i_n .>= 0)
 		@JuMP.objective(m, Min, sum($q) + regularization * sum(Ucol_i_n[l]^2 for l=1:facrank))
-		JuMP.solve(m)
-		return JuMP.getvalue(Ucol_i_n)
+		JuMP.optimize!(m)
+		return JuMP.value.(Ucol_i_n)
 	end
 	return code
 end

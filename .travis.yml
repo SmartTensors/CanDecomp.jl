@@ -1,0 +1,10 @@
+language: julia
+os:
+    - linux
+    - osx
+julia:
+    - 1.2
+notifications:
+     email: false
+after_success:
+    - julia -e 'import Pkg; import CanDecomp; cd(joinpath(dirname(pathof(CanDecomp)))); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'

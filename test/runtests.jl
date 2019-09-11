@@ -2,7 +2,7 @@ import CanDecomp
 import Test
 import Random
 import StaticArrays
-using LinearAlgebra
+import LinearAlgebra
 
 Random.seed!(0)
 A = rand(10, 3)
@@ -33,13 +33,13 @@ for optmethod in [:nnoptim, :nnjump, :nnmads]
 	Bp = B + noise * randn(size(B)...)
 	Cp = C + noise * randn(size(C)...)
 	T_init = CanDecomp.totensor(Ap, Bp, Cp)
-	initerror = norm(T - T_init)
+	initerror = LinearAlgebra.norm(T - T_init)
 	Ap1 = copy(Ap)
 	Bp1 = copy(Bp)
 	Cp1 = copy(Cp)
 	CanDecomp.candecompiteration!(StaticArrays.SVector(Ap1, Bp1, Cp1), T, Val{optmethod}; regularization=1e-3, print_level=0)
 	T_oneiteration = CanDecomp.totensor(Ap1, Bp1, Cp1)
-	oneiterationerror = norm(T - T_oneiteration)
+	oneiterationerror = LinearAlgebra.norm(T - T_oneiteration)
 	@Test.test initerror > oneiterationerror#make sure that doing an iteration actually improves things
 
 	Apf = copy(Ap)
@@ -48,7 +48,7 @@ for optmethod in [:nnoptim, :nnjump, :nnmads]
 	print(optmethod)
 	@time CanDecomp.candecomp!(StaticArrays.SVector(Apf, Bpf, Cpf), T, Val{optmethod}; regularization=1e-3, print_level=0, max_cd_iters=25)
 	T_done = CanDecomp.totensor(Apf, Bpf, Cpf)
-	doneerror = norm(T - T_done)
+	doneerror = LinearAlgebra.norm(T - T_done)
 	@Test.test oneiterationerror > doneerror#make sure doing more iterations improves things
 	@Test.test T_done ≈ T rtol=2e-2
 end
