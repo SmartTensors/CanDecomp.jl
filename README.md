@@ -14,7 +14,8 @@ or
 import Pkg; Pkg.develop("CanDecomp")
 ```
 
-**CanDecomp** is a module required by [NTFk](https://github.com/TensorDecompositions/NTFk.jl). For more information, visit [tensors.lanl.gov](http://tensors.lanl.gov)
+**CanDecomp** is a module required by [NTFk](https://github.com/TensorDecompositions/NTFk.jl).
+For more information, visit [tensors.lanl.gov](http://tensors.lanl.gov)
 
 ### Examples
 
