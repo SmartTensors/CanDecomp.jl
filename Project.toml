@@ -11,12 +11,12 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-Ipopt = "≥ 0.5"
-JuMP = "≥ 0.20"
-Mads = "≥ 0.7"
-Optim = "≥ 0.19"
-StaticArrays = "≥ v0.11"
-julia = "≥ 1.2"
+Ipopt = "^0"
+JuMP = "^0"
+Mads = "^0"
+Optim = "^0"
+StaticArrays = "^0"
+julia = "^1"
 
 [extras]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
