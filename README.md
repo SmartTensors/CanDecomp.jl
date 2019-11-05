@@ -1,5 +1,8 @@
 ## CanDecomp.jl: Candecomp/Parafac Tensor Decomposition ##
 
+**CanDecomp** is a module required by [NTFk](https://github.com/TensorDecompositions/NTFk.jl).
+For more information, visit [tensors.lanl.gov](http://tensors.lanl.gov)
+
 ### Installation
 
 After starting Julia, execute:
@@ -8,14 +11,19 @@ After starting Julia, execute:
 import Pkg; Pkg.add("CanDecomp")
 ```
 
-or
+to access the latest released version.
+To utilize the latest updates (commits) use:
 
 ```julia
-import Pkg; Pkg.develop("CanDecomp")
+import Pkg; Pkg.add(Pkg.PackageSpec(name="CanDecomp", rev="master"))
 ```
 
-**CanDecomp** is a module required by [NTFk](https://github.com/TensorDecompositions/NTFk.jl).
-For more information, visit [tensors.lanl.gov](http://tensors.lanl.gov)
+Docker
+-------
+
+```bash
+docker run --interactive --tty montyvesselinov/tensors
+```
 
 ### Examples
 
