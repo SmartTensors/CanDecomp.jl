@@ -1,6 +1,6 @@
 name = "CanDecomp"
 uuid = "6c57e878-bc0a-5706-8331-d2cb71f7d6e8"
-version = "0.4.0"
+version = "1.0.0"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -11,12 +11,12 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-Ipopt = "^0"
-JuMP = "^0"
-Mads = "^0.10"
-Optim = "^0"
-StaticArrays = "^0"
-julia = "^1.4"
+Ipopt = "0.6, 0.7"
+JuMP =  "0.21, 0.22"
+Mads = "1"
+Optim = "0.22, 0.23"
+StaticArrays = "0.12, 0.13"
+julia = "1.5"
 
 [extras]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
