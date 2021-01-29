@@ -92,9 +92,9 @@ for p in ps
 		JLD.save("timings.jld", "timingdict", timingdict)
 	end
 	if nworkers() == 1
-		ax[:loglog](2.^ns, ts[end] .* (8.^ns) ./ 8.^ns[end], "k", basex=2, basey=2)
+		ax[:loglog](2. ^ns, ts[end] .* (8. ^ns) ./ 8. ^ns[end], "k", basex=2, basey=2)
 	end
-	ax[:loglog](2.^ns, ts, ".", basex=2, basey=2, ms=10)
+	ax[:loglog](2. ^ns, ts, ".", basex=2, basey=2, ms=10)
 end
 ax[:set_ylabel]("time (s)")
 ax[:set_xlabel]("N")
