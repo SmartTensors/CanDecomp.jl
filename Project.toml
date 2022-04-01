@@ -11,8 +11,8 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-Ipopt = "0.6, 0.7, 0.8, 0.9, 1.0"
-JuMP =  "0.21, 0.22, 0.23"
+Ipopt = "0.6, 0.7, 0.8, 0.9, 1"
+JuMP =  "0.21, 0.22, 0.23, 1"
 Mads = "1"
 Optim = "1"
 StaticArrays = "1"
