@@ -1,7 +1,6 @@
-## CanDecomp.jl: Candecomp/Parafac Tensor Decomposition ##
+# CanDecomp.jl: Candecomp/Parafac Tensor Decomposition
 
-**CanDecomp** is a module required by [NTFk](https://github.com/TensorDecompositions/NTFk.jl).
-For more information, visit [tensors.lanl.gov](http://tensors.lanl.gov)
+**CanDecomp** is a module of **SmartTensors**.
 
 ### Installation
 
@@ -123,7 +122,7 @@ Nonnegativity enforces parts-based representation of the original data which als
 - Vesselinov, V.V., Mudunuru, M., Karra, S., O'Malley, D., Alexandrov, B.S., Unsupervised Machine Learning Based on Non-Negative Tensor Factorization for Analyzing Reactive-Mixing, 10.1016/j.jcp.2019.05.039, Journal of Computational Physics, 2019. [PDF](https://gitlab.com/monty/monty.gitlab.io/raw/master/papers/Vesselinov%20et%20al%202018%20Unsupervised%20Machine%20Learning%20Based%20on%20Non-Negative%20Tensor%20Factorization%20for%20Analyzing%20Reactive-Mixing.pdf)
 - Vesselinov, V.V., Alexandrov, B.S., O'Malley, D., Nonnegative Tensor Factorization for Contaminant Source Identification, Journal of Contaminant Hydrology, 10.1016/j.jconhyd.2018.11.010, 2018. [PDF](https://gitlab.com/monty/monty.gitlab.io/raw/master/papers/Vesselinov%20et%20al%202018%20Nonnegative%20Tensor%20Factorization%20for%20Contaminant%20Source%20Identification.pdf)
 - O'Malley, D., Vesselinov, V.V., Alexandrov, B.S., Alexandrov, L.B., Nonnegative/binary matrix factorization with a D-Wave quantum annealer, PlosOne, 10.1371/journal.pone.0206653, 2018. [PDF](https://gitlab.com/monty/monty.gitlab.io/raw/master/papers/OMalley%20et%20al%202017%20Nonnegative:binary%20matrix%20factorization%20with%20a%20D-Wave%20quantum%20annealer.pdf)
-- Stanev, V., Vesselinov, V.V., Kusne, A.G., Antoszewski, G., Takeuchi,I., Alexandrov, B.A., Unsupervised Phase Mapping of X-ray Diffraction Data by Nonnegative Matrix Factorization Integrated with Custom Clustering, Nature Computational Materials, 10.1038/s41524-018-0099-2, 2018. [PDF](https://gitlab.com/monty/monty.gitlab.io/raw/master/papers/Stanev%20et%20al%202018%20Unsupervised%20phase%20mapping%20of%20X-ray%20diffraction%20data%20by%20nonnegative%20matrix%20factorization%20integrated%20with%20custom%20clustering.pdf)
+- Stanev, V., Vesselinov, V.V., Kusne, A.G., Antoszewski, G., Takeuchi, I., Alexandrov, B.A., Unsupervised Phase Mapping of X-ray Diffraction Data by Nonnegative Matrix Factorization Integrated with Custom Clustering, Nature Computational Materials, 10.1038/s41524-018-0099-2, 2018. [PDF](https://gitlab.com/monty/monty.gitlab.io/raw/master/papers/Stanev%20et%20al%202018%20Unsupervised%20phase%20mapping%20of%20X-ray%20diffraction%20data%20by%20nonnegative%20matrix%20factorization%20integrated%20with%20custom%20clustering.pdf)
 - Iliev, F.L., Stanev, V.G., Vesselinov, V.V., Alexandrov, B.S., Nonnegative Matrix Factorization for identification of unknown number of sources emitting delayed signals PLoS ONE, 10.1371/journal.pone.0193974. 2018. [PDF](https://gitlab.com/monty/monty.gitlab.io/raw/master/papers/Iliev%20et%20al%202018%20Nonnegative%20Matrix%20Factorization%20for%20identification%20of%20unknown%20number%20of%20sources%20emitting%20delayed%20signals.pdf)
 - Stanev, V.G., Iliev, F.L., Hansen, S.K., Vesselinov, V.V., Alexandrov, B.S., Identification of the release sources in advection-diffusion system by machine learning combined with Green function inverse method, Applied Mathematical Modelling, 10.1016/j.apm.2018.03.006, 2018. [PDF](https://gitlab.com/monty/monty.gitlab.io/raw/master/papers/Stanev%20et%20al%202018%20Identification%20of%20release%20sources%20in%20advection-diffusion%20system%20by%20machine%20learning%20combined%20with%20Green's%20function%20inverse%20method.pdf)
 - Vesselinov, V.V., O'Malley, D., Alexandrov, B.S., Contaminant source identification using semi-supervised machine learning, Journal of Contaminant Hydrology, 10.1016/j.jconhyd.2017.11.002, 2017. [PDF](https://gitlab.com/monty/monty.gitlab.io/raw/master/papers/Vesselinov%202017%20Contaminant%20source%20identification%20using%20semi-supervised%20machine%20learning.pdf)
@@ -165,40 +164,3 @@ For more information, visit [monty.gitlab.io](http://monty.gitlab.io)
 * [Machine Learning](https://madsjulia.github.io/Mads.jl/Examples/machine_learning/index.html)
 * [Blind Source Separation (i.e. Feature Extraction)](https://madsjulia.github.io/Mads.jl/Examples/blind_source_separation/index.html)
 * [Source Identification](https://madsjulia.github.io/Mads.jl/Examples/contaminant_source_identification/index.html)
-
-Installation behind a firewall
-------------------------------
-
-Julia uses git for package management. Add in the `.gitconfig` file in your home directory:
-
-```
-[url "https://"]
-        insteadOf = git://
-```
-
-or execute:
-
-```
-git config --global url."https://".insteadOf git://
-```
-
-Julia uses git and curl to install packages. Set proxies:
-
-```
-export ftp_proxy=http://proxyout.<your_site>:8080
-export rsync_proxy=http://proxyout.<your_site>:8080
-export http_proxy=http://proxyout.<your_site>:8080
-export https_proxy=http://proxyout.<your_site>:8080
-export no_proxy=.<your_site>
-```
-
-For example, if you are doing this at LANL, you will need to execute the
-following lines in your bash command-line environment:
-
-```
-export ftp_proxy=http://proxyout.lanl.gov:8080
-export rsync_proxy=http://proxyout.lanl.gov:8080
-export http_proxy=http://proxyout.lanl.gov:8080
-export https_proxy=http://proxyout.lanl.gov:8080
-export no_proxy=.lanl.gov
-```
